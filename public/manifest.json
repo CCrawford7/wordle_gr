@@ -1,0 +1,13 @@
+{
+  "name": "Λεξούλι - Ελληνικό Wordle",
+  "short_name": "Λεξούλι",
+  "description": "Μάντεψε τη λέξη της ημέρας! Το αγαπημένο παιχνίδι λέξεων τώρα στα ελληνικά.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#22c55e",
+  "orientation": "portrait",
+  "categories": ["games", "entertainment"],
+  "lang": "el",
+  "dir": "ltr"
+}
