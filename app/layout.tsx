@@ -31,11 +31,20 @@ export const metadata: Metadata = {
     locale: 'el_GR',
     siteName: 'Λεξούλι',
     url: 'https://wordlegr.co',
+    images: [
+      {
+        url: '/og-image.png',
+        width: 1200,
+        height: 630,
+        alt: 'Λεξούλι - Ελληνικό Wordle',
+      },
+    ],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'Λεξούλι - Ελληνικό Wordle',
     description: 'Μάντεψε τη λέξη της ημέρας!',
+    images: ['/og-image.png'],
   },
   robots: {
     index: true,
