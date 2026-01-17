@@ -1,12 +1,11 @@
 'use client';
 
-import { KEYBOARD_ROWS_GR, KEYBOARD_ROWS_EN, TileState, Language } from '@/lib/constants';
+import { KEYBOARD_ROWS_GR, TileState } from '@/lib/constants';
 
 interface KeyboardProps {
   keyStates: Map<string, TileState>;
   onKeyPress: (key: string) => void;
   disabled?: boolean;
-  language: Language;
 }
 
 const stateClasses: Record<TileState | 'unused', string> = {
@@ -18,8 +17,8 @@ const stateClasses: Record<TileState | 'unused', string> = {
   absent: 'bg-gray-500 text-white hover:bg-gray-600',
 };
 
-export default function Keyboard({ keyStates, onKeyPress, disabled = false, language }: KeyboardProps) {
-  const KEYBOARD_ROWS = language === 'el' ? KEYBOARD_ROWS_GR : KEYBOARD_ROWS_EN;
+export default function Keyboard({ keyStates, onKeyPress, disabled = false }: KeyboardProps) {
+  const KEYBOARD_ROWS = KEYBOARD_ROWS_GR;
 
   const handleClick = (key: string) => {
     if (!disabled) {

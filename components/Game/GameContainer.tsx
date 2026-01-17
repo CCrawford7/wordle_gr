@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { GameMode, DEFAULT_WORD_LENGTH, MIN_WORD_LENGTH, MAX_WORD_LENGTH, Language } from '@/lib/constants';
+import { GameMode, DEFAULT_WORD_LENGTH, MIN_WORD_LENGTH, MAX_WORD_LENGTH } from '@/lib/constants';
 import { useGame } from '@/hooks/useGame';
 import Board from './Board';
 import Keyboard from './Keyboard';
@@ -16,7 +16,6 @@ import BannerAd from '../Ads/BannerAd';
 export default function GameContainer() {
   const [mode, setMode] = useState<GameMode>('daily');
   const [wordLength, setWordLength] = useState<number>(DEFAULT_WORD_LENGTH);
-  const [language, setLanguage] = useState<Language>('en'); // Default to English for testing
 
   // Modal states
   const [showHowToPlay, setShowHowToPlay] = useState(false);
@@ -44,7 +43,7 @@ export default function GameContainer() {
     message,
     handleKeyPress,
     resetGame,
-  } = useGame({ mode, wordLength, language });
+  } = useGame({ mode, wordLength });
 
   // Reset hints when game resets
   useEffect(() => {
@@ -97,13 +96,13 @@ export default function GameContainer() {
     console.log(`Reveal letter ${letter} at position ${position}`);
   };
 
-  // Labels based on language
+  // Labels
   const labels = {
-    daily: language === 'el' ? 'Ημερήσια' : 'Daily',
-    practice: language === 'el' ? 'Εξάσκηση' : 'Practice',
-    hint: language === 'el' ? 'Βοήθεια' : 'Hint',
-    playAgain: language === 'el' ? 'Παίξε Ξανά' : 'Play Again',
-    footer: language === 'el' ? 'Μάντεψε τη λέξη σε 6 προσπάθειες' : 'Guess the word in 6 tries',
+    daily: 'Ημερήσια',
+    practice: 'Εξάσκηση',
+    hint: 'Βοήθεια',
+    playAgain: 'Παίξε Ξανά',
+    footer: 'Μάντεψε τη λέξη σε 6 προσπάθειες',
   };
 
   return (
@@ -116,30 +115,6 @@ export default function GameContainer() {
 
       <div className="flex-1 flex flex-col justify-center py-4">
         <div className="flex flex-col items-center w-full max-w-lg mx-auto px-2">
-          {/* Language Toggle */}
-          <div className="flex gap-2 mb-4">
-            <button
-              onClick={() => setLanguage('en')}
-              className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
-                language === 'en'
-                  ? 'bg-blue-500 text-white'
-                  : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
-              }`}
-            >
-              English
-            </button>
-            <button
-              onClick={() => setLanguage('el')}
-              className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
-                language === 'el'
-                  ? 'bg-blue-500 text-white'
-                  : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
-              }`}
-            >
-              Ελληνικά
-            </button>
-          </div>
-
           {/* Mode & Word Length Selectors */}
           <div className="flex flex-col sm:flex-row gap-4 items-center justify-center mb-4 w-full">
             {/* Mode Toggle */}
@@ -231,7 +206,6 @@ export default function GameContainer() {
             keyStates={keyStates}
             onKeyPress={handleKeyPress}
             disabled={status !== 'playing' || isRevealing}
-            language={language}
           />
         </div>
       </div>
