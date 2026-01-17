@@ -1,10 +1,12 @@
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
-import { GameMode, GameStatus, MAX_GUESSES, TileState } from '@/lib/constants';
+import { GameMode, GameStatus, MAX_GUESSES, TileState, Language } from '@/lib/constants';
 import { evaluateGuess, getKeyboardStates, isCorrectGuess, normalizeGreek } from '@/lib/game-logic';
 import { isValidWord } from '@/lib/words/valid-words';
+import { isValidWordEN } from '@/lib/words/valid-words-en';
 import { getDailyWord, getRandomWord } from '@/lib/daily';
+import { getSolutionsEN } from '@/lib/words/solutions-en';
 import {
   getDailyState,
   saveDailyState,
@@ -18,6 +20,7 @@ import {
 interface UseGameOptions {
   mode: GameMode;
   wordLength: number;
+  language: Language;
 }
 
 interface UseGameReturn {
@@ -34,7 +37,30 @@ interface UseGameReturn {
   resetGame: () => void;
 }
 
-export function useGame({ mode, wordLength }: UseGameOptions): UseGameReturn {
+// Get daily word for English
+function getDailyWordEN(wordLength: number, date: Date = new Date()): string {
+  const solutions = getSolutionsEN(wordLength);
+  if (solutions.length === 0) {
+    throw new Error(`No English solutions for word length ${wordLength}`);
+  }
+  const msPerDay = 24 * 60 * 60 * 1000;
+  const epoch = new Date('2025-01-01T00:00:00Z');
+  const dayNumber = Math.floor((date.getTime() - epoch.getTime()) / msPerDay);
+  const seed = dayNumber * 10 + wordLength;
+  const index = Math.abs(seed * 1103515245 + 12345) % solutions.length;
+  return solutions[index];
+}
+
+// Get random word for English
+function getRandomWordEN(wordLength: number): string {
+  const solutions = getSolutionsEN(wordLength);
+  if (solutions.length === 0) {
+    throw new Error(`No English solutions for word length ${wordLength}`);
+  }
+  return solutions[Math.floor(Math.random() * solutions.length)];
+}
+
+export function useGame({ mode, wordLength, language }: UseGameOptions): UseGameReturn {
   const [solution, setSolution] = useState<string>('');
   const [guesses, setGuesses] = useState<string[]>([]);
   const [evaluations, setEvaluations] = useState<TileState[][]>([]);
@@ -46,39 +72,59 @@ export function useGame({ mode, wordLength }: UseGameOptions): UseGameReturn {
 
   // Initialize game
   useEffect(() => {
+    const storageKey = `${language}-${wordLength}`;
+
     if (mode === 'daily') {
       const savedState = getDailyState(wordLength);
-      if (savedState) {
-        setSolution(savedState.solution);
-        setGuesses(savedState.guesses);
-        setEvaluations(savedState.evaluations);
-        setStatus(savedState.status);
-      } else {
-        const word = getDailyWord(wordLength);
-        setSolution(word);
-        setGuesses([]);
-        setEvaluations([]);
-        setStatus('playing');
+      // Check if saved state matches current language
+      if (savedState && savedState.solution) {
+        const isGreekSolution = /[ΑΒΓΔΕΖΗΘΙΚΛΜΝΞΟΠΡΣΤΥΦΧΨΩ]/.test(savedState.solution);
+        const matchesLanguage = (language === 'el' && isGreekSolution) || (language === 'en' && !isGreekSolution);
+
+        if (matchesLanguage && savedState.date === getTodayString()) {
+          setSolution(savedState.solution);
+          setGuesses(savedState.guesses);
+          setEvaluations(savedState.evaluations);
+          setStatus(savedState.status);
+          setCurrentGuess('');
+          setMessage(null);
+          return;
+        }
       }
+
+      // New game
+      const word = language === 'el' ? getDailyWord(wordLength) : getDailyWordEN(wordLength);
+      setSolution(word);
+      setGuesses([]);
+      setEvaluations([]);
+      setStatus('playing');
     } else {
       const savedState = getPracticeState(wordLength);
       if (savedState && savedState.status === 'playing') {
-        setSolution(savedState.solution);
-        setGuesses(savedState.guesses);
-        setEvaluations(savedState.evaluations);
-        setStatus(savedState.status);
-      } else {
-        const word = getRandomWord(wordLength);
-        setSolution(word);
-        setGuesses([]);
-        setEvaluations([]);
-        setStatus('playing');
-        clearPracticeState(wordLength);
+        const isGreekSolution = /[ΑΒΓΔΕΖΗΘΙΚΛΜΝΞΟΠΡΣΤΥΦΧΨΩ]/.test(savedState.solution);
+        const matchesLanguage = (language === 'el' && isGreekSolution) || (language === 'en' && !isGreekSolution);
+
+        if (matchesLanguage) {
+          setSolution(savedState.solution);
+          setGuesses(savedState.guesses);
+          setEvaluations(savedState.evaluations);
+          setStatus(savedState.status);
+          setCurrentGuess('');
+          setMessage(null);
+          return;
+        }
       }
+
+      const word = language === 'el' ? getRandomWord(wordLength) : getRandomWordEN(wordLength);
+      setSolution(word);
+      setGuesses([]);
+      setEvaluations([]);
+      setStatus('playing');
+      clearPracticeState(wordLength);
     }
     setCurrentGuess('');
     setMessage(null);
-  }, [mode, wordLength]);
+  }, [mode, wordLength, language]);
 
   // Calculate keyboard states
   const keyStates = getKeyboardStates(guesses, evaluations);
@@ -119,15 +165,21 @@ export function useGame({ mode, wordLength }: UseGameOptions): UseGameReturn {
 
     if (key === 'ENTER') {
       if (currentGuess.length !== wordLength) {
-        showMessage('Πολύ σύντομη λέξη');
+        showMessage(language === 'el' ? 'Πολύ σύντομη λέξη' : 'Too short');
         return;
       }
 
-      const normalizedGuess = normalizeGreek(currentGuess);
+      const normalizedGuess = language === 'el'
+        ? normalizeGreek(currentGuess)
+        : currentGuess.toUpperCase();
 
       // Check if word is valid
-      if (!isValidWord(normalizedGuess, wordLength)) {
-        showMessage('Άγνωστη λέξη');
+      const isValid = language === 'el'
+        ? isValidWord(normalizedGuess, wordLength)
+        : isValidWordEN(normalizedGuess, wordLength);
+
+      if (!isValid) {
+        showMessage(language === 'el' ? 'Άγνωστη λέξη' : 'Not in word list');
         return;
       }
 
@@ -152,11 +204,11 @@ export function useGame({ mode, wordLength }: UseGameOptions): UseGameReturn {
         if (isCorrectGuess(currentGuess, solution)) {
           setStatus('won');
           updateStats(mode, wordLength, true, newGuesses.length);
-          showMessage('Μπράβο! 🎉', 3000);
+          showMessage(language === 'el' ? 'Μπράβο! 🎉' : 'Excellent! 🎉', 3000);
         } else if (newGuesses.length >= MAX_GUESSES) {
           setStatus('lost');
           updateStats(mode, wordLength, false, newGuesses.length);
-          showMessage(`Η λέξη ήταν: ${solution}`, 5000);
+          showMessage(language === 'el' ? `Η λέξη ήταν: ${solution}` : `The word was: ${solution}`, 5000);
         }
       }, wordLength * 300 + 300);
 
@@ -166,7 +218,7 @@ export function useGame({ mode, wordLength }: UseGameOptions): UseGameReturn {
       // Add letter
       setCurrentGuess(prev => prev + key);
     }
-  }, [status, isRevealing, currentGuess, wordLength, solution, guesses, evaluations, mode, showMessage]);
+  }, [status, isRevealing, currentGuess, wordLength, solution, guesses, evaluations, mode, language, showMessage]);
 
   // Handle physical keyboard
   useEffect(() => {
@@ -178,23 +230,29 @@ export function useGame({ mode, wordLength }: UseGameOptions): UseGameReturn {
       } else if (e.key === 'Backspace') {
         handleKeyPress('BACKSPACE');
       } else {
-        // Map Latin keys to Greek (for Greek keyboard layout)
         const key = e.key.toUpperCase();
-        const greekLetterRegex = /^[ΑΒΓΔΕΖΗΘΙΚΛΜΝΞΟΠΡΣΤΥΦΧΨΩ]$/;
-        if (greekLetterRegex.test(key)) {
-          handleKeyPress(key);
+        if (language === 'el') {
+          const greekLetterRegex = /^[ΑΒΓΔΕΖΗΘΙΚΛΜΝΞΟΠΡΣΤΥΦΧΨΩ]$/;
+          if (greekLetterRegex.test(key)) {
+            handleKeyPress(key);
+          }
+        } else {
+          const englishLetterRegex = /^[A-Z]$/;
+          if (englishLetterRegex.test(key)) {
+            handleKeyPress(key);
+          }
         }
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleKeyPress]);
+  }, [handleKeyPress, language]);
 
   // Reset game (for practice mode)
   const resetGame = useCallback(() => {
     if (mode === 'practice') {
-      const word = getRandomWord(wordLength);
+      const word = language === 'el' ? getRandomWord(wordLength) : getRandomWordEN(wordLength);
       setSolution(word);
       setGuesses([]);
       setEvaluations([]);
@@ -203,7 +261,7 @@ export function useGame({ mode, wordLength }: UseGameOptions): UseGameReturn {
       setMessage(null);
       clearPracticeState(wordLength);
     }
-  }, [mode, wordLength]);
+  }, [mode, wordLength, language]);
 
   return {
     guesses,

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { GameMode, DEFAULT_WORD_LENGTH, MIN_WORD_LENGTH, MAX_WORD_LENGTH } from '@/lib/constants';
+import { GameMode, DEFAULT_WORD_LENGTH, MIN_WORD_LENGTH, MAX_WORD_LENGTH, Language } from '@/lib/constants';
 import { useGame } from '@/hooks/useGame';
 import Board from './Board';
 import Keyboard from './Keyboard';
@@ -16,6 +16,7 @@ import BannerAd from '../Ads/BannerAd';
 export default function GameContainer() {
   const [mode, setMode] = useState<GameMode>('daily');
   const [wordLength, setWordLength] = useState<number>(DEFAULT_WORD_LENGTH);
+  const [language, setLanguage] = useState<Language>('en'); // Default to English for testing
 
   // Modal states
   const [showHowToPlay, setShowHowToPlay] = useState(false);
@@ -43,7 +44,7 @@ export default function GameContainer() {
     message,
     handleKeyPress,
     resetGame,
-  } = useGame({ mode, wordLength });
+  } = useGame({ mode, wordLength, language });
 
   // Reset hints when game resets
   useEffect(() => {
@@ -93,8 +94,16 @@ export default function GameContainer() {
   };
 
   const handleRevealLetter = (position: number, letter: string) => {
-    // This could be implemented to show revealed letters on the board
     console.log(`Reveal letter ${letter} at position ${position}`);
+  };
+
+  // Labels based on language
+  const labels = {
+    daily: language === 'el' ? 'Ημερήσια' : 'Daily',
+    practice: language === 'el' ? 'Εξάσκηση' : 'Practice',
+    hint: language === 'el' ? 'Βοήθεια' : 'Hint',
+    playAgain: language === 'el' ? 'Παίξε Ξανά' : 'Play Again',
+    footer: language === 'el' ? 'Μάντεψε τη λέξη σε 6 προσπάθειες' : 'Guess the word in 6 tries',
   };
 
   return (
@@ -107,6 +116,30 @@ export default function GameContainer() {
 
       <div className="flex-1 flex flex-col justify-center py-4">
         <div className="flex flex-col items-center w-full max-w-lg mx-auto px-2">
+          {/* Language Toggle */}
+          <div className="flex gap-2 mb-4">
+            <button
+              onClick={() => setLanguage('en')}
+              className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
+                language === 'en'
+                  ? 'bg-blue-500 text-white'
+                  : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
+              }`}
+            >
+              English
+            </button>
+            <button
+              onClick={() => setLanguage('el')}
+              className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
+                language === 'el'
+                  ? 'bg-blue-500 text-white'
+                  : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
+              }`}
+            >
+              Ελληνικά
+            </button>
+          </div>
+
           {/* Mode & Word Length Selectors */}
           <div className="flex flex-col sm:flex-row gap-4 items-center justify-center mb-4 w-full">
             {/* Mode Toggle */}
@@ -119,7 +152,7 @@ export default function GameContainer() {
                     : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
                 }`}
               >
-                Ημερήσια
+                {labels.daily}
               </button>
               <button
                 onClick={() => setMode('practice')}
@@ -129,7 +162,7 @@ export default function GameContainer() {
                     : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
                 }`}
               >
-                Εξάσκηση
+                {labels.practice}
               </button>
             </div>
 
@@ -179,7 +212,7 @@ export default function GameContainer() {
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
               </svg>
-              Βοήθεια
+              {labels.hint}
             </button>
           )}
 
@@ -189,7 +222,7 @@ export default function GameContainer() {
               onClick={handlePlayAgain}
               className="mb-4 px-6 py-2 bg-green-500 text-white rounded-lg font-medium hover:bg-green-600 transition-colors"
             >
-              Παίξε Ξανά
+              {labels.playAgain}
             </button>
           )}
 
@@ -198,6 +231,7 @@ export default function GameContainer() {
             keyStates={keyStates}
             onKeyPress={handleKeyPress}
             disabled={status !== 'playing' || isRevealing}
+            language={language}
           />
         </div>
       </div>
@@ -208,7 +242,7 @@ export default function GameContainer() {
       {/* Footer */}
       <footer className="border-t border-gray-200 dark:border-gray-700 py-4 px-4 text-center">
         <p className="text-sm text-gray-500 dark:text-gray-400">
-          Μάντεψε τη λέξη σε 6 προσπάθειες
+          {labels.footer}
         </p>
       </footer>
 

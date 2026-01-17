@@ -20,6 +20,9 @@ export default function Board({
   isRevealing,
   revealingRow,
 }: BoardProps) {
+  // Determine tile size based on word length for mobile fit
+  const tileSize: 'sm' | 'md' | 'lg' = wordLength >= 7 ? 'sm' : wordLength >= 6 ? 'md' : 'lg';
+
   const rows = [];
 
   for (let i = 0; i < MAX_GUESSES; i++) {
@@ -50,6 +53,7 @@ export default function Board({
           state={state}
           position={j}
           isRevealing={isRevealingThisRow}
+          size={tileSize}
         />
       );
     }
