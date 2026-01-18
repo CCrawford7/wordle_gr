@@ -165,15 +165,17 @@ export function useGame({ mode, wordLength }: UseGameOptions): UseGameReturn {
       const newGuesses = [...guesses, normalizedGuess];
       const newEvaluations = [...evaluations, evaluation];
 
+      // Set guesses and evaluations immediately so the flip animation has the data
+      setGuesses(newGuesses);
+      setEvaluations(newEvaluations);
+      setCurrentGuess('');
+
       // Start reveal animation
       setIsRevealing(true);
-      setRevealingRow(guesses.length);
+      setRevealingRow(newGuesses.length - 1);
 
       // After animation completes
       setTimeout(() => {
-        setGuesses(newGuesses);
-        setEvaluations(newEvaluations);
-        setCurrentGuess('');
         setIsRevealing(false);
         setRevealingRow(-1);
 

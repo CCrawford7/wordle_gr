@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { addDebugWord, getDebugWords, getRejectedWords, clearRejectedWords } from '@/lib/words/valid-words';
+import { addDebugWord, getDebugWords, getRejectedWords, clearRejectedWords, isSkipValidationEnabled, setSkipValidation, getValidWords } from '@/lib/words/valid-words';
 
 interface DebugPanelProps {
   solution: string;
@@ -26,6 +26,7 @@ export default function DebugPanel({
   const [newValidWord, setNewValidWord] = useState('');
   const [debugWords, setDebugWords] = useState<string[]>([]);
   const [rejectedWords, setRejectedWords] = useState<string[]>([]);
+  const [skipValidation, setSkipValidationState] = useState(false);
 
   // Only show in development
   if (process.env.NODE_ENV !== 'development') {
@@ -37,6 +38,7 @@ export default function DebugPanel({
     const loadWords = () => {
       setDebugWords(getDebugWords());
       setRejectedWords(getRejectedWords());
+      setSkipValidationState(isSkipValidationEnabled());
     };
     loadWords();
     // Refresh every second to catch new rejected words
@@ -65,12 +67,15 @@ export default function DebugPanel({
   };
 
   const fillWrongGuess = () => {
-    const wrongLetters = 'ΑΒΓΔΕΖΗΘΙΚΛΜΝΞΟΠΡΣΤΥΦΧΨΩ'
-      .split('')
-      .filter(l => !solution.includes(l))
-      .slice(0, wordLength)
-      .join('');
-    fillWord(wrongLetters || 'ΑΒΓΔΕ'.slice(0, wordLength));
+    const validWords = Array.from(getValidWords(wordLength));
+    // Filter out solution and already guessed words
+    const availableWords = validWords.filter(
+      word => word !== solution && !guesses.includes(word)
+    );
+    if (availableWords.length > 0) {
+      const randomWord = availableWords[Math.floor(Math.random() * availableWords.length)];
+      fillWord(randomWord);
+    }
   };
 
   const testAllStates = () => {
@@ -96,6 +101,12 @@ export default function DebugPanel({
   const copyRejectedToClipboard = () => {
     const formatted = rejectedWords.map(w => `'${w}'`).join(', ');
     navigator.clipboard.writeText(formatted);
+  };
+
+  const handleToggleSkipValidation = () => {
+    const newValue = !skipValidation;
+    setSkipValidation(newValue);
+    setSkipValidationState(newValue);
   };
 
   return (
@@ -236,6 +247,26 @@ export default function DebugPanel({
 
           {activeTab === 'words' && (
             <>
+              {/* Skip Validation Toggle */}
+              <div className="mb-3 p-2 bg-yellow-900/50 rounded flex items-center justify-between">
+                <div>
+                  <div className="text-xs font-medium text-yellow-300">Accept All Words</div>
+                  <div className="text-xs text-yellow-500">Skip dictionary validation</div>
+                </div>
+                <button
+                  onClick={handleToggleSkipValidation}
+                  className={`relative w-12 h-6 rounded-full transition-colors ${
+                    skipValidation ? 'bg-green-500' : 'bg-gray-600'
+                  }`}
+                >
+                  <span
+                    className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${
+                      skipValidation ? 'left-7' : 'left-1'
+                    }`}
+                  />
+                </button>
+              </div>
+
               {/* Add Debug Word */}
               <div className="mb-3">
                 <div className="text-xs text-gray-400 mb-1">Add word to accept temporarily:</div>
