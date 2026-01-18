@@ -9,12 +9,16 @@ interface KeyboardProps {
 }
 
 const stateClasses: Record<TileState | 'unused', string> = {
-  unused: 'bg-gray-200 dark:bg-gray-600 text-black dark:text-white hover:bg-gray-300 dark:hover:bg-gray-500',
-  empty: 'bg-gray-200 dark:bg-gray-600 text-black dark:text-white hover:bg-gray-300 dark:hover:bg-gray-500',
-  tbd: 'bg-gray-200 dark:bg-gray-600 text-black dark:text-white',
-  correct: 'bg-green-500 text-white hover:bg-green-600',
-  present: 'bg-yellow-500 text-white hover:bg-yellow-600',
-  absent: 'bg-gray-500 text-white hover:bg-gray-600',
+  // Unplayed letters - bright and prominent
+  unused: 'bg-gray-300 dark:bg-gray-500 text-gray-900 dark:text-white hover:bg-gray-400 dark:hover:bg-gray-400 shadow-sm',
+  empty: 'bg-gray-300 dark:bg-gray-500 text-gray-900 dark:text-white hover:bg-gray-400 dark:hover:bg-gray-400 shadow-sm',
+  tbd: 'bg-gray-300 dark:bg-gray-500 text-gray-900 dark:text-white',
+  // Correct letters - vibrant green
+  correct: 'bg-green-500 text-white hover:bg-green-600 shadow-md ring-2 ring-green-400',
+  // Present letters (right letter, wrong position) - vibrant yellow/amber
+  present: 'bg-amber-500 text-white hover:bg-amber-600 shadow-md ring-2 ring-amber-400',
+  // Absent letters (not in word) - dark and muted
+  absent: 'bg-gray-700 dark:bg-gray-800 text-gray-400 dark:text-gray-500 hover:bg-gray-600 dark:hover:bg-gray-700',
 };
 
 export default function Keyboard({ keyStates, onKeyPress, disabled = false }: KeyboardProps) {

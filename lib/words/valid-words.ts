@@ -263,5 +263,85 @@ export function getValidWords(wordLength: number): Set<string> {
 
 export function isValidWord(word: string, wordLength: number): boolean {
   const validWords = getValidWords(wordLength);
-  return validWords.has(word.toUpperCase());
+  const upperWord = word.toUpperCase();
+
+  // Check main valid words first
+  if (validWords.has(upperWord)) {
+    return true;
+  }
+
+  // In development, also check localStorage for temporarily added words
+  if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
+    try {
+      const customWords = JSON.parse(localStorage.getItem('lexouli-debug-words') || '[]');
+      if (customWords.includes(upperWord)) {
+        return true;
+      }
+    } catch {
+      // Ignore parse errors
+    }
+  }
+
+  return false;
+}
+
+// Helper to add a word to the debug list (development only)
+export function addDebugWord(word: string): void {
+  if (typeof window === 'undefined' || process.env.NODE_ENV !== 'development') return;
+
+  try {
+    const customWords = JSON.parse(localStorage.getItem('lexouli-debug-words') || '[]');
+    const upperWord = word.toUpperCase();
+    if (!customWords.includes(upperWord)) {
+      customWords.push(upperWord);
+      localStorage.setItem('lexouli-debug-words', JSON.stringify(customWords));
+    }
+  } catch {
+    // Ignore errors
+  }
+}
+
+// Helper to get all debug words
+export function getDebugWords(): string[] {
+  if (typeof window === 'undefined' || process.env.NODE_ENV !== 'development') return [];
+
+  try {
+    return JSON.parse(localStorage.getItem('lexouli-debug-words') || '[]');
+  } catch {
+    return [];
+  }
+}
+
+// Helper to track rejected words for later review
+export function trackRejectedWord(word: string): void {
+  if (typeof window === 'undefined' || process.env.NODE_ENV !== 'development') return;
+
+  try {
+    const rejectedWords = JSON.parse(localStorage.getItem('lexouli-rejected-words') || '[]');
+    const upperWord = word.toUpperCase();
+    if (!rejectedWords.includes(upperWord)) {
+      rejectedWords.push(upperWord);
+      localStorage.setItem('lexouli-rejected-words', JSON.stringify(rejectedWords));
+      console.log(`[Debug] Rejected word tracked: ${upperWord}`);
+    }
+  } catch {
+    // Ignore errors
+  }
+}
+
+// Helper to get all rejected words for review
+export function getRejectedWords(): string[] {
+  if (typeof window === 'undefined' || process.env.NODE_ENV !== 'development') return [];
+
+  try {
+    return JSON.parse(localStorage.getItem('lexouli-rejected-words') || '[]');
+  } catch {
+    return [];
+  }
+}
+
+// Helper to clear rejected words
+export function clearRejectedWords(): void {
+  if (typeof window === 'undefined') return;
+  localStorage.removeItem('lexouli-rejected-words');
 }

@@ -3,7 +3,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { GameMode, GameStatus, MAX_GUESSES, TileState } from '@/lib/constants';
 import { evaluateGuess, getKeyboardStates, isCorrectGuess, normalizeGreek } from '@/lib/game-logic';
-import { isValidWord } from '@/lib/words/valid-words';
+import { isValidWord, trackRejectedWord } from '@/lib/words/valid-words';
 import { getDailyWord, getRandomWord } from '@/lib/daily';
 import {
   getDailyState,
@@ -30,6 +30,7 @@ interface UseGameReturn {
   revealingRow: number;
   solution: string;
   message: string | null;
+  elapsedTime: number; // seconds since game started
   handleKeyPress: (key: string) => void;
   resetGame: () => void;
 }
@@ -43,6 +44,8 @@ export function useGame({ mode, wordLength }: UseGameOptions): UseGameReturn {
   const [isRevealing, setIsRevealing] = useState<boolean>(false);
   const [revealingRow, setRevealingRow] = useState<number>(-1);
   const [message, setMessage] = useState<string | null>(null);
+  const [startTime, setStartTime] = useState<number | null>(null);
+  const [elapsedTime, setElapsedTime] = useState<number>(0);
 
   // Initialize game
   useEffect(() => {
@@ -114,6 +117,24 @@ export function useGame({ mode, wordLength }: UseGameOptions): UseGameReturn {
     }
   }, [mode, wordLength, guesses, evaluations, status, solution]);
 
+  // Timer effect - update elapsed time every second while playing
+  useEffect(() => {
+    if (status !== 'playing' || !startTime) return;
+
+    const interval = setInterval(() => {
+      setElapsedTime(Math.floor((Date.now() - startTime) / 1000));
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [status, startTime]);
+
+  // Stop timer and record final time when game ends
+  useEffect(() => {
+    if (status !== 'playing' && startTime) {
+      setElapsedTime(Math.floor((Date.now() - startTime) / 1000));
+    }
+  }, [status, startTime]);
+
   // Show message temporarily
   const showMessage = useCallback((msg: string, duration: number = 2000) => {
     setMessage(msg);
@@ -135,6 +156,7 @@ export function useGame({ mode, wordLength }: UseGameOptions): UseGameReturn {
       // Check if word is valid
       if (!isValidWord(normalizedGuess, wordLength)) {
         showMessage('Άγνωστη λέξη');
+        trackRejectedWord(normalizedGuess); // Track for later review
         return;
       }
 
@@ -170,10 +192,14 @@ export function useGame({ mode, wordLength }: UseGameOptions): UseGameReturn {
     } else if (key === 'BACKSPACE') {
       setCurrentGuess(prev => prev.slice(0, -1));
     } else if (currentGuess.length < wordLength) {
+      // Start timer on first letter
+      if (!startTime && guesses.length === 0 && currentGuess.length === 0) {
+        setStartTime(Date.now());
+      }
       // Add letter
       setCurrentGuess(prev => prev + key);
     }
-  }, [status, isRevealing, currentGuess, wordLength, solution, guesses, evaluations, mode, showMessage]);
+  }, [status, isRevealing, currentGuess, wordLength, solution, guesses, evaluations, mode, showMessage, startTime]);
 
   // Handle physical keyboard
   useEffect(() => {
@@ -207,6 +233,8 @@ export function useGame({ mode, wordLength }: UseGameOptions): UseGameReturn {
       setCurrentGuess('');
       setStatus('playing');
       setMessage(null);
+      setStartTime(null);
+      setElapsedTime(0);
       clearPracticeState(wordLength);
     }
   }, [mode, wordLength]);
@@ -221,6 +249,7 @@ export function useGame({ mode, wordLength }: UseGameOptions): UseGameReturn {
     revealingRow,
     solution,
     message,
+    elapsedTime,
     handleKeyPress,
     resetGame,
   };

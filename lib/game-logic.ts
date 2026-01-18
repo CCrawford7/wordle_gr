@@ -119,5 +119,5 @@ export function generateShareText(
     }).join('')
   ).join('\n');
 
-  return header + grid + '\n\nlexouli.gr';
+  return header + grid + '\n\nwordlegr.co';
 }

@@ -12,6 +12,8 @@ import Settings from '../Modal/Settings';
 import GameEnd from '../Modal/GameEnd';
 import HintModal from '../Hints/HintModal';
 import BannerAd from '../Ads/BannerAd';
+import DebugPanel from '../Debug/DebugPanel';
+import Leaderboard from '../Modal/Leaderboard';
 
 export default function GameContainer() {
   const [mode, setMode] = useState<GameMode>('daily');
@@ -23,6 +25,8 @@ export default function GameContainer() {
   const [showSettings, setShowSettings] = useState(false);
   const [showGameEnd, setShowGameEnd] = useState(false);
   const [showHints, setShowHints] = useState(false);
+  const [showLeaderboard, setShowLeaderboard] = useState(false);
+  const [pendingScore, setPendingScore] = useState<{ attempts: number; time: number } | null>(null);
 
   // Hint tracking
   const [hintsUsed, setHintsUsed] = useState({
@@ -41,6 +45,7 @@ export default function GameContainer() {
     revealingRow,
     solution,
     message,
+    elapsedTime,
     handleKeyPress,
     resetGame,
   } = useGame({ mode, wordLength });
@@ -59,10 +64,14 @@ export default function GameContainer() {
   // Show game end modal when game finishes
   useEffect(() => {
     if (status !== 'playing' && !isRevealing) {
+      // Set pending score for leaderboard (daily mode only, wins only)
+      if (status === 'won' && mode === 'daily') {
+        setPendingScore({ attempts: guesses.length, time: elapsedTime });
+      }
       const timer = setTimeout(() => setShowGameEnd(true), 1500);
       return () => clearTimeout(timer);
     }
-  }, [status, isRevealing]);
+  }, [status, isRevealing, mode, guesses.length, elapsedTime]);
 
   // Show how to play on first visit
   useEffect(() => {
@@ -157,6 +166,17 @@ export default function GameContainer() {
                 </button>
               ))}
             </div>
+
+            {/* Leaderboard Button (daily mode only) */}
+            {mode === 'daily' && (
+              <button
+                onClick={() => setShowLeaderboard(true)}
+                className="px-4 py-2 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 rounded-lg font-medium hover:bg-amber-200 dark:hover:bg-amber-900/50 transition-colors flex items-center gap-2"
+              >
+                🏆
+                <span className="hidden sm:inline">Κατάταξη</span>
+              </button>
+            )}
           </div>
 
           {/* Message Toast */}
@@ -245,6 +265,23 @@ export default function GameContainer() {
         hintsUsed={hintsUsed}
         onUseHint={handleUseHint}
         onRevealLetter={handleRevealLetter}
+      />
+      <Leaderboard
+        isOpen={showLeaderboard}
+        onClose={() => setShowLeaderboard(false)}
+        wordLength={wordLength}
+        pendingScore={pendingScore}
+        onScoreSubmitted={() => setPendingScore(null)}
+      />
+
+      {/* Debug Panel - only visible in development */}
+      <DebugPanel
+        solution={solution}
+        wordLength={wordLength}
+        onKeyPress={handleKeyPress}
+        guesses={guesses}
+        status={status}
+        onReset={mode === 'practice' ? resetGame : undefined}
       />
     </>
   );

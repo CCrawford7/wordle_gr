@@ -1,13 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // Enable static export for Cloudflare Pages
-  output: 'export',
-
-  // Disable image optimization for static export
-  images: {
-    unoptimized: true,
-  },
+  // Vercel handles Next.js natively, no static export needed
+  // This enables API routes for leaderboard
 
   // Trailing slash for clean URLs
   trailingSlash: false,

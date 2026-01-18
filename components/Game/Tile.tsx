@@ -10,12 +10,22 @@ interface TileProps {
   size?: 'sm' | 'md' | 'lg';
 }
 
-const stateClasses: Record<TileState, string> = {
-  empty: 'border-gray-300 dark:border-gray-600',
-  tbd: 'border-gray-500 dark:border-gray-400 text-black dark:text-white',
+// Colors for the back face (revealed state)
+const backStateClasses: Record<TileState, string> = {
+  empty: 'bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600',
+  tbd: 'bg-white dark:bg-gray-800 border-gray-500 dark:border-gray-400 text-black dark:text-white',
   correct: 'bg-green-500 border-green-500 text-white',
-  present: 'bg-yellow-500 border-yellow-500 text-white',
-  absent: 'bg-gray-500 border-gray-500 text-white',
+  present: 'bg-amber-500 border-amber-500 text-white',
+  absent: 'bg-gray-600 border-gray-600 text-white',
+};
+
+// Front face is always neutral
+const frontStateClasses: Record<TileState, string> = {
+  empty: 'bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600',
+  tbd: 'bg-white dark:bg-gray-800 border-gray-500 dark:border-gray-400 text-black dark:text-white',
+  correct: 'bg-white dark:bg-gray-800 border-gray-500 dark:border-gray-400 text-black dark:text-white',
+  present: 'bg-white dark:bg-gray-800 border-gray-500 dark:border-gray-400 text-black dark:text-white',
+  absent: 'bg-white dark:bg-gray-800 border-gray-500 dark:border-gray-400 text-black dark:text-white',
 };
 
 const sizeClasses: Record<'sm' | 'md' | 'lg', string> = {
@@ -26,24 +36,77 @@ const sizeClasses: Record<'sm' | 'md' | 'lg', string> = {
 
 export default function Tile({ letter, state, position, isRevealing = false, size = 'lg' }: TileProps) {
   const delay = position * 300;
+  const isRevealed = state === 'correct' || state === 'present' || state === 'absent';
+  const shouldFlip = isRevealing && isRevealed;
 
+  // If not revealing and already revealed (from saved state), show colored tile directly
+  if (isRevealed && !isRevealing) {
+    return (
+      <div
+        className={`
+          ${sizeClasses[size]}
+          flex items-center justify-center
+          font-bold uppercase
+          border-2 rounded
+          ${backStateClasses[state]}
+        `}
+      >
+        {letter}
+      </div>
+    );
+  }
+
+  // For tiles that need to flip or are in tbd/empty state
   return (
     <div
-      className={`
-        ${sizeClasses[size]}
-        flex items-center justify-center
-        font-bold uppercase
-        border-2 rounded
-        transition-all duration-300
-        ${stateClasses[state]}
-        ${letter && state === 'tbd' ? 'scale-105' : ''}
-        ${isRevealing ? 'animate-flip' : ''}
-      `}
-      style={{
-        animationDelay: isRevealing ? `${delay}ms` : '0ms',
-      }}
+      className={`${sizeClasses[size]} perspective-500`}
+      style={{ perspective: '1000px' }}
     >
-      {letter}
+      <div
+        className={`
+          relative w-full h-full
+          transition-transform duration-500
+          ${shouldFlip ? 'animate-flip-card' : ''}
+        `}
+        style={{
+          transformStyle: 'preserve-3d',
+          animationDelay: shouldFlip ? `${delay}ms` : '0ms',
+        }}
+      >
+        {/* Front face - no color */}
+        <div
+          className={`
+            absolute inset-0
+            flex items-center justify-center
+            font-bold uppercase
+            border-2 rounded
+            backface-hidden
+            ${frontStateClasses[state]}
+            ${letter && (state === 'tbd' || shouldFlip) ? 'scale-105' : ''}
+          `}
+          style={{ backfaceVisibility: 'hidden' }}
+        >
+          {letter}
+        </div>
+
+        {/* Back face - colored */}
+        <div
+          className={`
+            absolute inset-0
+            flex items-center justify-center
+            font-bold uppercase
+            border-2 rounded
+            backface-hidden
+            ${backStateClasses[state]}
+          `}
+          style={{
+            backfaceVisibility: 'hidden',
+            transform: 'rotateX(180deg)',
+          }}
+        >
+          {letter}
+        </div>
+      </div>
     </div>
   );
 }
